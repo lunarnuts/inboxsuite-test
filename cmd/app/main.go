@@ -1,15 +1,23 @@
 package main
 
 import (
-	"github.com/rabbitmq/amqp091-go"
+	"github.com/lunarnuts/inboxsuite-test/config"
+	"github.com/lunarnuts/inboxsuite-test/internal/application"
 	"os"
 )
 
 func main() {
-	url := os.Getenv("AMQP_URL")
-	if url == "" {
-		url = "amqp://guest:guest@localhost:5672/"
+	cfg, err := config.Load()
+	if err != nil {
+		panic(err)
 	}
 
-	connection, err := amqp091.Dial(url)
+	app, err := application.New(cfg)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	if err = app.Run(); err != nil {
+		os.Exit(1)
+	}
 }
