@@ -1,1 +1,3 @@
 .idea
+deploy/local/rabbitmq
+deploy/local/volumes
