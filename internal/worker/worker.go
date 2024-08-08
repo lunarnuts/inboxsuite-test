@@ -112,8 +112,8 @@ func (w *Worker) PublishStatistics(ctx context.Context, count int64) {
 	}
 	w.publishCh <- &publisher.Publishing{
 		Ctx:       ctx,
-		Exchange:  w.cfg.ResultExchange,
-		Key:       w.cfg.ResultExchange,
+		Exchange:  w.cfg.StatisticsExchange,
+		Key:       w.cfg.StatisticsExchange,
 		Mandatory: false,
 		Immediate: false,
 		Msg: amqp091.Publishing{

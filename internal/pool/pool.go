@@ -2,6 +2,8 @@ package pool
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/lunarnuts/inboxsuite-test/config"
 	"github.com/lunarnuts/inboxsuite-test/internal/dto"
 	"github.com/lunarnuts/inboxsuite-test/internal/interfaces"
@@ -59,7 +61,7 @@ func (p *Pool) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			wg.Wait()
-			p.Stop()
+			p.Stop(ctx)
 		case err := <-p.errChan:
 			p.logger.Error(op, "error", err.Error())
 		}
@@ -67,14 +69,40 @@ func (p *Pool) Run(ctx context.Context) {
 
 }
 
-func (p *Pool) Stop() {
+func (p *Pool) Stop(ctx context.Context) {
 	const op = "Pool.Stop"
 	defer close(p.errChan)
-	err := p.channel.Close()
+	err := p.PublishStatistics(ctx)
 	if err != nil {
 		p.logger.Error(op, "error", err.Error())
 		return
 	}
+	err = p.channel.Close()
+	if err != nil {
+		p.logger.Error(op, "error", err.Error())
+		return
+	}
+}
+
+func (p *Pool) PublishStatistics(ctx context.Context) error {
+	body, err := json.Marshal(&dto.Statistics{Count: p.stats.Load()})
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprint("PublishStatistics: error marshalling result"))
+	}
+	err = p.channel.PublishWithContext(ctx,
+		p.cfg.StatisticsExchange,
+		p.cfg.StatisticsExchange,
+		true,
+		true,
+		amqp091.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprint("PublishStatistics: error marshalling result"))
+	}
+	p.logger.Info("sent statistics", "statistics", string(body))
+	return nil
 }
 
 func (p *Pool) Notify() <-chan error {
