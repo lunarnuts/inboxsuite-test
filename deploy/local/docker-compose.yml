@@ -1,0 +1,55 @@
+services:
+  test-rabbit:
+    container_name: test-rabbit-host
+    image: "rabbitmq:3.10.7-management"
+    env_file:
+      - ./docker.env
+    restart: always
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - ./rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  test-db:
+    container_name: test-db-host
+    image: "postgres:16.3"
+    env_file:
+      - ./docker.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./volumes/:/var/lib/postgresql/data
+
+  test:
+    container_name: test-host
+    build:
+      context: ../../
+      dockerfile: deploy/Dockerfile
+    command:
+      - /bin/sh
+      - -c
+      - |
+        /app/migrator -config /tmp/config.yaml
+        /app/main -config /tmp/config.yaml
+    env_file:
+      - ./docker.env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../../config/config.example.yaml:/tmp/config.yaml
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-rabbit:
+        condition: service_healthy
