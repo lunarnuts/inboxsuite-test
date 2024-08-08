@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -39,4 +40,12 @@ func New(connString string, opts ...Option) (*Gorm, error) {
 		return nil, fmt.Errorf("failed to ping connection: %w", err)
 	}
 	return &Gorm{db}, nil
+}
+
+func (g *Gorm) WithCtx(ctx context.Context) *Gorm {
+	return &Gorm{g.WithContext(ctx)}
+}
+
+func (g *Gorm) TxBegin(ctx context.Context) *Gorm {
+	return &Gorm{g.WithCtx(ctx).Begin()}
 }
