@@ -24,10 +24,13 @@ type (
 	}
 
 	RabbitMQ struct {
-		Host     string `yaml:"host"`
-		Port     string `yaml:"port"`
-		User     string `yaml:"user"`
-		Password string `yaml:"password"`
+		JobQueue           string `yaml:"job_queue"`
+		ResultExchange     string `yaml:"result_exchange"`
+		StatisticsExchange string `yaml:"statistics_exchange"`
+		Host               string `yaml:"host"`
+		Port               string `yaml:"port"`
+		User               string `yaml:"user"`
+		Password           string `yaml:"password"`
 	}
 
 	DB struct {
@@ -53,7 +56,7 @@ func (r *RabbitMQ) ParseURL() string {
 }
 
 func Load() (*Config, error) {
-	configFile := flag.String("config", "config.yaml", "path to config file")
+	configFile := flag.String("config", "config.example.yaml", "path to config file")
 	flag.Parse()
 
 	data, err := preprocess(configFile)
@@ -66,6 +69,12 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "error parsing config file")
 	}
+
+	n := flag.Int("worker", 10, "number of workers")
+	if n != nil {
+		cfg.Worker = *n
+	}
+
 	return &cfg, nil
 }
 
@@ -82,17 +91,17 @@ func Load() (*Config, error) {
 func preprocess(configFile *string) ([]byte, error) {
 	data, err := os.ReadFile(*configFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read config file")
+		return nil, err
 	}
 
 	content := string(data)
 
-	re := regexp.MustCompile(`\$\{(.+?)}`)
+	re := regexp.MustCompile(`\$\{(.+?)\}`)
 	replacedContent := re.ReplaceAllStringFunc(content, func(s string) string {
-		envVarName := strings.TrimSuffix(strings.TrimPrefix(content, "${"), "}")
+		envVarName := strings.TrimSuffix(strings.TrimPrefix(s, `${`), `}`)
 		envVarValue := os.Getenv(envVarName)
 		return envVarValue
 	})
 
-	return []byte(replacedContent), nil
+	return []byte(replacedContent), err
 }

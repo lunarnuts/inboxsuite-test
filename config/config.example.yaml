@@ -1,17 +1,20 @@
 logger:
-  level: "debug"
-  env: "local"
+  level: ${LOG_LEVEL}
+  env: ${ENV}
 db:
-  name: "postgres"
-  host: "localhost"
-  port: "5432"
-  user: "postgres"
-  password: "password"
+  name: ${POSTGRES_DB}
+  host: ${DB_HOST}
+  port: ${DB_PORT}
+  user: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
   ssl: "allow"
 http:
   server:
 rabbitmq:
-  host: "localhost"
-  port: "15672"
-  user: "guest"
-  password: "guest"
+  job_queue: "jobs"
+  result_exchange: "results"
+  statistics_exchange: "stats"
+  host: ${RABBITMQ_HOST}
+  port: ${RABBITMQ_PORT}
+  user: ${RABBITMQ_DEFAULT_USER}
+  password: ${RABBITMQ_DEFAULT_PASS}
