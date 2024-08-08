@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/lunarnuts/inboxsuite-test/config"
 	"github.com/lunarnuts/inboxsuite-test/internal/application"
 	"os"
@@ -12,7 +13,19 @@ func main() {
 		panic(err)
 	}
 
-	app, err := application.New(cfg)
+	appCtx := context.Background()
+
+	app, err := application.New(appCtx, cfg)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = app.InitCache()
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = app.InitWorkers()
 	if err != nil {
 		os.Exit(1)
 	}
